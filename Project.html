@@ -216,13 +216,8 @@ names(comp) &lt;- c(&quot;Actual&quot;,&quot;Estimate&quot; )
 
 ## training set confusion matrix
 table(comp[,])/apply(table(comp[,]),2,sum)</code></pre>
-<pre><code>##       Estimate
-## Actual A B C D E
-##      A 1 0 0 0 0
-##      B 0 1 0 0 0
-##      C 0 0 1 0 0
-##      D 0 0 0 1 0
-##      E 0 0 0 0 1</code></pre>
+<pre><code>  Estimate</code></pre>
+<p>Actual A B C D E A 1 0 0 0 0 B 0 1 0 0 0 C 0 0 1 0 0 D 0 0 0 1 0 E 0 0 0 0 1</p>
 <p>Testing on the trained data-set, I get a perfect 100% classification.</p>
 </div>
 <div id="out-of-sample-error" class="section level2">
@@ -272,32 +267,15 @@ names(compt) &lt;- c(&quot;Actual&quot;,&quot;Estimate&quot; )
 
 ## testing set confusion matrix
 table(compt[,])/apply(table(compt[,]),2,sum)</code></pre>
-<pre><code>##       Estimate
-## Actual        A        B        C        D        E
-##      A 0.879464 0.004464 0.001218 0.002435 0.000406
-##      B 0.091563 0.861347 0.012426 0.001308 0.005886
-##      C 0.047929 0.125102 0.899269 0.010561 0.005686
-##      D 0.065429 0.013263 0.079576 0.946065 0.007958
-##      E 0.018059 0.024078 0.009029 0.030098 0.980436</code></pre>
+<pre><code>  Estimate</code></pre>
+<p>Actual A B C D E A 0.879464 0.004464 0.001218 0.002435 0.000406 B 0.091563 0.861347 0.012426 0.001308 0.005886 C 0.047929 0.125102 0.899269 0.010561 0.005686 D 0.065429 0.013263 0.079576 0.946065 0.007958 E 0.018059 0.024078 0.009029 0.030098 0.980436</p>
 <pre class="r"><code>confusionMatrix(compt[,1],compt[,2])$overall</code></pre>
-<pre><code>##       Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull 
-##       9.06e-01       8.81e-01       9.00e-01       9.13e-01       3.21e-01 
-## AccuracyPValue  McnemarPValue 
-##       0.00e+00       1.21e-89</code></pre>
+<pre><code>  Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull 
+  9.06e-01       8.81e-01       9.00e-01       9.13e-01       3.21e-01 </code></pre>
+<p>AccuracyPValue McnemarPValue 0.00e+00 1.21e-89</p>
 <pre class="r"><code>confusionMatrix(compt[,1],compt[,2])$byClass</code></pre>
-<pre><code>##          Sensitivity Specificity Pos Pred Value Neg Pred Value Prevalence
-## Class: A       0.879       0.996          0.990          0.946      0.321
-## Class: B       0.861       0.972          0.886          0.966      0.199
-## Class: C       0.899       0.964          0.826          0.980      0.160
-## Class: D       0.946       0.971          0.851          0.991      0.147
-## Class: E       0.980       0.983          0.923          0.996      0.173
-##          Detection Rate Detection Prevalence Balanced Accuracy
-## Class: A          0.282                0.285             0.938
-## Class: B          0.171                0.194             0.917
-## Class: C          0.144                0.174             0.932
-## Class: D          0.139                0.164             0.959
-## Class: E          0.170                0.184             0.982</code></pre>
-<p>Testing on the testing data-set, I get a perfect very good classification with 90% accuracy.</p>
+<pre><code>     Sensitivity Specificity Pos Pred Value Neg Pred Value Prevalence</code></pre>
+<p>Class: A 0.879 0.996 0.990 0.946 0.321 Class: B 0.861 0.972 0.886 0.966 0.199 Class: C 0.899 0.964 0.826 0.980 0.160 Class: D 0.946 0.971 0.851 0.991 0.147 Class: E 0.980 0.983 0.923 0.996 0.173 Detection Rate Detection Prevalence Balanced Accuracy Class: A 0.282 0.285 0.938 Class: B 0.171 0.194 0.917 Class: C 0.144 0.174 0.932 Class: D 0.139 0.164 0.959 Class: E 0.170 0.184 0.982 Testing on the testing data-set, I get a perfect very good classification with 90% accuracy.</p>
 </div>
 </div>
 <div id="conclusions" class="section level1">
