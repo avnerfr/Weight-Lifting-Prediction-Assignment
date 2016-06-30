@@ -170,7 +170,7 @@ majVote[majVote==5] <- "E"
 ##In sample error: 
 calculate the classification error on the training set
 
-```{r, cache = TRUE ,echo=TRUE}
+```{r, cache = TRUE ,echo=TRUE, results='asis'}
 
 comp<- data.frame(as.character(arm$classe ),cbind(as.character(majVote)))
 names(comp) <- c("Actual","Estimate" )
@@ -187,7 +187,7 @@ Testing on the trained data-set, I get a perfect 100% classification.
 ##Out of sample error: 
 Run all of the pre-processing on the testing set and calculate the classification error on the testing set
 
-```{r, cache = TRUE, fig.align='center' ,echo=TRUE}
+```{r, cache = TRUE, fig.align='center' ,echo=TRUE, results='asis'}
 
 
 options(digits=3)
