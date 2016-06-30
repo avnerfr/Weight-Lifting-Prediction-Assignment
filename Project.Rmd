@@ -1,26 +1,21 @@
 ---
 title: "Weight Lifting Prediction Assignment"
 author: "Avner Freiberger"
-date: "Monday, June 20, 2016"
+date: "June 30, 2016"
 output: html_document
 ---
-
-# TODO
-create a repo
-add the image( locations) and files to the repo 
-add link to image
 
 
 
 #Introduction
 
 The following report lists out the considerations and the steps in a prediction assignment of activity quality.
-The source data for the prediction model was collected by 
+The source data for the prediction model was collected by:
+
 Ugulino, W.; Cardador, D.; Vega, K.; Velloso, E.; Milidiu, R.; Fuks, H. Wearable Computing: Accelerometers' Data Classification of Body Postures and Movements
+the data and description to the experiment can be found in the [following link](http://groupware.les.inf.puc-rio.br/har)
 
-and can be found in the [following link](http://groupware.les.inf.puc-rio.br/har)
-
-The purpose of the study is to attempt to determine weather it is possible to determine quality of fitness center exercise.
+The main purpose of the study is to attempt check whether it is possible to determine the quality of weight lifting exercises by measuring with several on body sensors. for the test, the team measured the participants while they were exercising in various levels of correctness.
 
 # Dataset
 The data set that was used for the analysis was collected using 4 different sensors:
@@ -30,9 +25,9 @@ The data set that was used for the analysis was collected using 4 different sens
 3. sensor located on the belt
 4. sensor located on the dumbbell
 
-![on-body sensing schema](https://github.com/avnerfr/Weight-Lifting-Prediction-Assignment/lon-body sensing schema.png)
+![on-body sensing schema](https://raw.githubusercontent.com/avnerfr/Weight-Lifting-Prediction-Assignment/master/on-body-sensing-schema.png)
 
-Each of the sensors that was used has 3 elements it is able:
+Each of the sensors that was used has 3 elements:
 
 1. 3D accelerometer which measures the forces in 1Hz
 2. 3D magnetic field which measures the orientation of the sensor to the earth north
@@ -40,15 +35,16 @@ Each of the sensors that was used has 3 elements it is able:
 
 In addition to the data element, each of the reading had the participant name and the measurement ID (num_window)
 
-```{r, ECHO}
+```{r, cache = TRUE}
 
 library(ISLR); 
 library(ggplot2);
 library(caret);
+library(RCurl)
 
 set.seed(12345)
-
-rawData <- read.csv("pml-training.csv")
+file <- getURL("https://raw.githubusercontent.com/avnerfr/Weight-Lifting-Prediction-Assignment/master/pml-training.csv")
+rawData <- read.csv(text = file)
 
 ```
 
@@ -61,9 +57,8 @@ A short examination of the data shows that:
 2. Each window has a concluding line which includes aggregations and calculation. I prefer to exclude these elements
 3. There are 5 different participants. I decide not to use this data element to improve model usability.
 
-#   ---------TODO  ----------- add graph
 
-```{r, ECHO = TRUE}
+```{r, cache = TRUE}
 
 
 # remove unneeded rows and then empty or null columns
@@ -72,21 +67,13 @@ clean[clean==""] <- NA
 clean <- clean[,colSums(is.na(clean))<nrow(clean)]
 clean$classe <- as.character(clean$classe)
 
-
-
-################################
-################################
-################################
-
-
 ```
 
 #Modeling
 
 First step of the modeling phase would be to extract 60% of the reading for modeling and cross-validation and leave 40% of the reading and use them for testing purpose.
 
-```{r}
-
+```{r, cache = TRUE}
 
 # create a training set and split to the various sensors
 inTrain <- createDataPartition(y= clean$classe, p=0.6,list = FALSE) # split based on classe, 60% for training and 40% for testing
@@ -96,8 +83,8 @@ testing <- clean[-inTrain,]
 ```
 
 
-According to the shape of the data, I decide to build 4 different random forest models, one for each sensor and combine the results using majority vote algoritm.
-In addition, I decided to pre-process the data prior to modeling. the preprocessing I did where:
+According to the shape of the data, I decide to build 4 different random forest models, one for each sensor and combine the results using majority vote algorithm.
+In addition, I decided to pre-process the data prior to modeling. the pre-processing I did where:
 
 * Add aggregations to the data:
       + calculate mean value from roll, pitch and yaw values
@@ -105,14 +92,14 @@ In addition, I decided to pre-process the data prior to modeling. the preprocess
       + calculate max value from roll, pitch and yaw values
       + calculate amplitude of gyroscope X,Y and Z values
       + calculate amplitude of accelerometer X,Y and Z values
-      + calculate amplitude of megnetic sensor X,Y and Z values
+      + calculate amplitude of magnetic sensor X,Y and Z values
 * Run PCA transform and use the top 90%
  
 
-![on-body sensing schema](https://github.com/avnerfr/Weight-Lifting-Prediction-Assignment/diagram.png)
+![on-body sensing schema](https://raw.githubusercontent.com/avnerfr/Weight-Lifting-Prediction-Assignment/master/diagram.png)
 
 
-```{r}
+```{r, cache = TRUE}
 # functions definition:
 ## addSectionAggregations - claculate aggregations to a sub section and add them to the set
 addSectionAggregations <- function( orig, filter , prefix){
@@ -154,7 +141,7 @@ arm_comp <- compSection(preproc_arm, arm,"a" )
 belt_comp<- compSection(preproc_belt, belt,"b")
 dumbbell_comp<- compSection(preproc_dumbbell, dumbbell,"d")
 forearm_comp<- compSection(preproc_forearm, forearm,"f")
-```
+
 
 
 
@@ -164,13 +151,11 @@ modFitb <- train(b.classe ~ ., method = "rf", data = belt_comp)
 modFitd <- train(d.classe ~ ., method = "rf", data = dumbbell_comp)
 modFitf <- train(f.classe ~ ., method = "rf", data = forearm_comp)
 
-#check accuracy on the training set
 ## apply majority vote to the 4 models
 predictions <- cbind(predict(modFita, arm_comp),predict(modFitb, belt_comp),predict(modFitd, dumbbell_comp),predict(modFitf, forearm_comp))
 majVote <- apply(predictions, 1, function(idx) {
      as.numeric(which(tabulate(idx) == max(tabulate(idx)))[1])
 })
-
 
 majVote[majVote==1] <- "A"
 majVote[majVote==2] <- "B"
@@ -178,13 +163,34 @@ majVote[majVote==3] <- "C"
 majVote[majVote==4] <- "D"
 majVote[majVote==5] <- "E"
 
+```
+
+#Model Testing
+
+##In sample error: 
+calculate the classification error on the training set
+
+```{r, cache = TRUE}
+
+comp<- data.frame(as.character(arm$classe ),cbind(as.character(majVote)))
+names(comp) <- c("Actual","Estimate" )
+
+## training set confusion matrix
+table(comp[,])/apply(table(comp[,]),2,sum)
+
+```
+
+Testing on the trained data-set, I get a perfect 100% classification.
 
 
 
+##Out of sample error: 
+Run all of the pre-processing on the testing set and calculate the classification error on the testing set
+
+```{r, cache = TRUE, fig.align='center' }
 
 
-
-
+options(digits=3)
 
 #check accuracy on the testing set
 
@@ -222,16 +228,19 @@ majVotet[majVotet==4] <- "D"
 majVotet[majVotet==5] <- "E"
 
 
-comp<- data.frame(as.character(arm$classe ),cbind(as.character(majVote)))
 compt<- data.frame(as.character(arm_t$classe ),cbind(as.character(majVotet)))
-names(comp) <- c("Actual","Estimate" )
 names(compt) <- c("Actual","Estimate" )
-
-## training set confusion matrix
-table(comp[,])/apply(table(comp[,]),2,sum)
 
 
 ## testing set confusion matrix
 table(compt[,])/apply(table(compt[,]),2,sum)
 
+confusionMatrix(compt[,1],compt[,2])$overall
+confusionMatrix(compt[,1],compt[,2])$byClass
 
+```
+Testing on the testing data-set, I get a perfect very good classification with 90% accuracy.
+
+#Conclusions
+
+I was able to determine the quality of the weight lifting with high level of accuracy therefore I think it is a doable concept to determine the quality of a weightlifting practice. 
