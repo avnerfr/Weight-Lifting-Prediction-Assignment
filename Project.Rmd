@@ -170,13 +170,16 @@ majVote[majVote==5] <- "E"
 ##In sample error: 
 calculate the classification error on the training set
 
-```{r, cache = TRUE ,echo=TRUE, results='asis'}
+```{r, echo = TRUE, cache=TRUE, results="asis"}
+library(xtable)
 
 comp<- data.frame(as.character(arm$classe ),cbind(as.character(majVote)))
 names(comp) <- c("Actual","Estimate" )
 
 ## training set confusion matrix
-table(comp[,])/apply(table(comp[,]),2,sum)
+print(xtable(table(comp[,])/apply(table(comp[,]),2,sum)), type = "html")
+
+
 
 ```
 
@@ -233,7 +236,7 @@ names(compt) <- c("Actual","Estimate" )
 
 
 ## testing set confusion matrix
-table(compt[,])/apply(table(compt[,]),2,sum)
+print(xtable(table(compt[,])/apply(table(compt[,]),2,sum)), type = "html")
 
 confusionMatrix(compt[,1],compt[,2])$overall
 confusionMatrix(compt[,1],compt[,2])$byClass
