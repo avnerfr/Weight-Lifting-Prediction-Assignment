@@ -170,14 +170,13 @@ majVote[majVote==5] <- "E"
 ##In sample error: 
 calculate the classification error on the training set
 
-```{r, echo = TRUE, cache=TRUE, results="asis"}
-library(xtable)
+```{r, echo = TRUE, cache=TRUE}
 
 comp<- data.frame(as.character(arm$classe ),cbind(as.character(majVote)))
 names(comp) <- c("Actual","Estimate" )
 
 ## training set confusion matrix
-print(xtable(table(comp[,])/apply(table(comp[,]),2,sum)), type = "html")
+table(comp[,])/apply(table(comp[,]),2,sum)
 
 
 
@@ -185,12 +184,18 @@ print(xtable(table(comp[,])/apply(table(comp[,]),2,sum)), type = "html")
 
 Testing on the trained data-set, I get a perfect 100% classification.
 
-
+                           Estimate
+Actual         **A**      **B**       **C**       **D**       **E**
+               **A**       1     0     0     0     0
+               **B**       0     1     0     0     0
+               **C**       0     0     1     0     0
+               **D**       0     0     0     1     0
+               **E**       0     0     0     0     1
 
 ##Out of sample error: 
 Run all of the pre-processing on the testing set and calculate the classification error on the testing set
 
-```{r, cache = TRUE, fig.align='center' ,echo=TRUE, results='asis'}
+```{r, cache = TRUE, fig.align='center' ,echo=TRUE}
 
 
 options(digits=3)
@@ -236,13 +241,23 @@ names(compt) <- c("Actual","Estimate" )
 
 
 ## testing set confusion matrix
-print(xtable(table(compt[,])/apply(table(compt[,]),2,sum)), type = "html")
-
-confusionMatrix(compt[,1],compt[,2])$overall
-confusionMatrix(compt[,1],compt[,2])$byClass
+table(compt[,])/apply(table(compt[,]),2,sum)
 
 ```
+
+
+
+
 Testing on the testing data-set, I get a perfect very good classification with 90% accuracy.
+
+                           Estimate
+ Actual        **A**        **B**        **C**        **D**        **E**
+               **A** 0.878751 0.004461 0.001217 0.002433 0.000406
+               **B** 0.091563 0.862001 0.011772 0.001308 0.005886
+               **C** 0.048701 0.123377 0.899351 0.010552 0.005682
+               **D** 0.066430 0.014172 0.080602 0.945084 0.007972
+               **E** 0.018072 0.024096 0.009036 0.030873 0.980422
+
 
 #Conclusions
 
