@@ -1,8 +1,246 @@
-# Weight-Lifting-Prediction-Assignment
-Weight Lifting Prediction Assignment for the Coursera "Practical Machine Learning" course
+---
+title: "Weight Lifting Prediction Assignment"
+author: "Avner Freiberger"
+date: "June 30, 2016"
+output: pdf_document
+---
 
 
 
-## the current repository contains the r code as well as the data used for the implementation of the coursera assignment
+#Introduction
+
+The following report lists out the considerations and the steps in a prediction assignment of activity quality.
+The source data for the prediction model was collected by:
+
+Ugulino, W.; Cardador, D.; Vega, K.; Velloso, E.; Milidiu, R.; Fuks, H. Wearable Computing: Accelerometers' Data Classification of Body Postures and Movements
+the data and description to the experiment can be found in the [following link](http://groupware.les.inf.puc-rio.br/har)
+
+The main purpose of the study is to attempt check whether it is possible to determine the quality of weight lifting exercises by measuring with several on body sensors. for the test, the team measured the participants while they were exercising in various levels of correctness.
+
+# Dataset
+The data set that was used for the analysis was collected using 4 different sensors:
+
+1. sensor located on the arm
+2. sensor located on the forearm
+3. sensor located on the belt
+4. sensor located on the dumbbell
+
+![on-body sensing schema](https://raw.githubusercontent.com/avnerfr/Weight-Lifting-Prediction-Assignment/master/on-body-sensing-schema.png)
+
+Each of the sensors that was used has 3 elements:
+
+1. 3D accelerometer which measures the forces in 1Hz
+2. 3D magnetic field which measures the orientation of the sensor to the earth north
+3. 3D gyroscope which measures the device's radial acceleration in 1Hz
+
+In addition to the data element, each of the reading had the participant name and the measurement ID (num_window)
+
+```{r, cache = TRUE}
+
+library(ISLR); 
+library(ggplot2);
+library(caret);
+library(RCurl)
+
+set.seed(12345)
+file <- getURL("https://raw.githubusercontent.com/avnerfr/Weight-Lifting-Prediction-Assignment/master/pml-training.csv")
+rawData <- read.csv(text = file)
+
+```
 
 
+#Exploratory Analysis
+
+A short examination of the data shows that:
+
+1. There are 5 different levels of exercise (marked "A", "B", "C", "D" and "E"). 
+2. Each window has a concluding line which includes aggregations and calculation. I prefer to exclude these elements
+3. There are 5 different participants. I decide not to use this data element to improve model usability.
+
+
+```{r, cache = TRUE}
+
+
+# remove unneeded rows and then empty or null columns
+clean <- rawData[rawData$new_window=="no",]
+clean[clean==""] <- NA
+clean <- clean[,colSums(is.na(clean))<nrow(clean)]
+clean$classe <- as.character(clean$classe)
+
+```
+
+#Modeling
+
+First step of the modeling phase would be to extract 60% of the reading for modeling and cross-validation and leave 40% of the reading and use them for testing purpose.
+
+```{r, cache = TRUE}
+
+# create a training set and split to the various sensors
+inTrain <- createDataPartition(y= clean$classe, p=0.6,list = FALSE) # split based on classe, 60% for training and 40% for testing
+training <- clean[inTrain,]
+testing <- clean[-inTrain,]
+
+```
+
+
+According to the shape of the data, I decide to build 4 different random forest models, one for each sensor and combine the results using majority vote algorithm.
+In addition, I decided to pre-process the data prior to modeling. the pre-processing I did where:
+
+* Add aggregations to the data:
+      + calculate mean value from roll, pitch and yaw values
+      + calculate min value from roll, pitch and yaw values
+      + calculate max value from roll, pitch and yaw values
+      + calculate amplitude of gyroscope X,Y and Z values
+      + calculate amplitude of accelerometer X,Y and Z values
+      + calculate amplitude of magnetic sensor X,Y and Z values
+* Run PCA transform and use the top 90%
+ 
+
+![on-body sensing schema](https://raw.githubusercontent.com/avnerfr/Weight-Lifting-Prediction-Assignment/master/diagram.png)
+
+
+```{r, cache = TRUE}
+# functions definition:
+## addSectionAggregations - claculate aggregations to a sub section and add them to the set
+addSectionAggregations <- function( orig, filter , prefix){
+      ###include only relevant elements
+      sec <-orig[,grepl(filter, names( orig ))]
+      sec$meanrph <- apply(sec[,grepl("roll|pitch|yaw", names( sec ))],1, FUN=mean)
+      sec$minrph <- apply(sec[,grepl("roll|pitch|yaw", names( sec ))],1, FUN=min)
+      sec$maxrph <- apply(sec[,grepl("roll|pitch|yaw", names( sec ))],1, FUN=max)
+      sec$ssrph <- apply(sec[,grepl("roll|pitch|yaw", names( sec ))],1, FUN=function(x) sqrt(sum(x^2)) )
+      sec$ssgy <- apply(sec[,grepl("^gyros", names( sec ))],1, FUN=function(x) sqrt(sum(x^2)) )
+      sec$ssaccel <- apply(sec[,grepl("^accel", names( sec ))],1, FUN=function(x) sqrt(sum(x^2)) )
+      sec$ssmagnet <- apply(sec[,grepl("^magnet", names( sec ))],1, FUN=function(x) sqrt(sum(x^2)) )
+      return(sec)
+}
+
+
+## compSection - claculate aggregations to a sub section and add them to the set
+compSection<- function( preproc_sec, sec, prefix){
+      sec_comp <- predict(preproc_sec, sec[!names(sec) %in% c("")])
+      sec_comp <- sec_comp[,grepl("^PC|^classe", names( sec_comp ))]
+      sec_comp$classe <- sec$classe
+      names(sec_comp) <- paste(prefix, names(sec_comp) ,sep = ".")
+      return(sec_comp)
+}
+
+
+arm <- addSectionAggregations(training, "_arm|^classe","a" )
+belt  <- addSectionAggregations(training,  "_belt|^classe","b" )
+dumbbell <- addSectionAggregations(training,  "_dumbbell|^classe","d" )
+forearm <- addSectionAggregations(training,  "_forearm|^classe","f" )
+
+      
+preproc_arm <- preProcess(arm[!names(arm) %in% c("classe")],method = "pca",thresh = 0.9)
+preproc_belt <- preProcess(belt[!names(belt) %in% c("classe")],method = "pca",thresh = 0.9)
+preproc_dumbbell <- preProcess(dumbbell[!names(dumbbell) %in% c("classe")],method = "pca",thresh = 0.9)
+preproc_forearm <- preProcess(forearm[!names(forearm) %in% c("classe")],method = "pca",thresh = 0.9)
+
+arm_comp <- compSection(preproc_arm, arm,"a" )
+belt_comp<- compSection(preproc_belt, belt,"b")
+dumbbell_comp<- compSection(preproc_dumbbell, dumbbell,"d")
+forearm_comp<- compSection(preproc_forearm, forearm,"f")
+
+
+
+
+# fit the 4 random forest models      
+modFita <- train(a.classe ~ ., method = "rf", data = arm_comp )
+modFitb <- train(b.classe ~ ., method = "rf", data = belt_comp)
+modFitd <- train(d.classe ~ ., method = "rf", data = dumbbell_comp)
+modFitf <- train(f.classe ~ ., method = "rf", data = forearm_comp)
+
+## apply majority vote to the 4 models
+predictions <- cbind(predict(modFita, arm_comp),predict(modFitb, belt_comp),predict(modFitd, dumbbell_comp),predict(modFitf, forearm_comp))
+majVote <- apply(predictions, 1, function(idx) {
+     as.numeric(which(tabulate(idx) == max(tabulate(idx)))[1])
+})
+
+majVote[majVote==1] <- "A"
+majVote[majVote==2] <- "B"
+majVote[majVote==3] <- "C"
+majVote[majVote==4] <- "D"
+majVote[majVote==5] <- "E"
+
+```
+
+#Model Testing
+
+##In sample error: 
+calculate the classification error on the training set
+
+```{r, echo = TRUE, cache=TRUE}
+
+comp<- data.frame(as.character(arm$classe ),cbind(as.character(majVote)))
+names(comp) <- c("Actual","Estimate" )
+
+## training set confusion matrix
+table(comp[,])/apply(table(comp[,]),2,sum)
+
+
+
+```
+
+Testing on the trained data-set, I get a perfect 100% classification.
+
+##Out of sample error: 
+Run all of the pre-processing on the testing set and calculate the classification error on the testing set
+
+```{r, cache = TRUE, fig.align='center' ,echo=TRUE}
+
+
+options(digits=3)
+
+#check accuracy on the testing set
+
+## extract additional features
+arm_t <- addSectionAggregations(testing,  "_arm|^classe","a" )
+belt_t  <- addSectionAggregations(testing,  "_belt|^classe","b" )
+dumbbell_t <- addSectionAggregations(testing,  "_dumbbell|^classe","d" )
+forearm_t <- addSectionAggregations(testing,  "_forearm|^classe","f" )
+
+
+# predict all 4 models on the test environment
+
+arm_t_comp <- predict(preproc_arm, arm_t[!names(arm_t) %in% c("a.classe")]) 
+names(arm_t_comp) <- paste("a", names(arm_t_comp) ,sep = ".")
+belt_t_comp <- predict(preproc_belt, belt_t[!names(belt_t) %in% c("b.classe")]) 
+names(belt_t_comp) <- paste("b", names(belt_t_comp) ,sep = ".")
+dumbbell_t_comp <- predict(preproc_dumbbell, dumbbell_t[!names(dumbbell_t) %in% c("d.classe")]) 
+names(dumbbell_t_comp) <- paste("d", names(dumbbell_t_comp) ,sep = ".")
+forearm_t_comp <- predict(preproc_forearm, forearm_t[!names(forearm_t) %in% c("f.classe")]) 
+names(forearm_t_comp) <- paste("f", names(forearm_t_comp) ,sep = ".")
+
+
+# apply majority vote to the 4 models
+predictions <- cbind(predict(modFita, arm_t_comp),predict(modFitb, belt_t_comp),predict(modFitd, dumbbell_t_comp),predict(modFitf, forearm_t_comp))
+
+majVotet <- apply(predictions, 1, function(idx) {
+     as.numeric(which(tabulate(idx) == max(tabulate(idx)))[1])
+})
+
+
+majVotet[majVotet==1] <- "A"
+majVotet[majVotet==2] <- "B"
+majVotet[majVotet==3] <- "C"
+majVotet[majVotet==4] <- "D"
+majVotet[majVotet==5] <- "E"
+
+
+compt<- data.frame(as.character(arm_t$classe ),cbind(as.character(majVotet)))
+names(compt) <- c("Actual","Estimate" )
+
+
+## testing set confusion matrix
+table(compt[,])/apply(table(compt[,]),2,sum)
+
+```
+
+
+Testing on the testing data-set, I get a perfect very good classification with 90% accuracy.
+
+
+#Conclusions
+
+I was able to determine the quality of the weight lifting with high level of accuracy therefore I think it is a doable concept to determine the quality of a weightlifting practice. 
