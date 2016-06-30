@@ -2,7 +2,7 @@
 title: "Weight Lifting Prediction Assignment"
 author: "Avner Freiberger"
 date: "June 30, 2016"
-output: html_document
+output: pdf_document
 ---
 
 
@@ -184,14 +184,6 @@ table(comp[,])/apply(table(comp[,]),2,sum)
 
 Testing on the trained data-set, I get a perfect 100% classification.
 
-                           Estimate
-Actual         **A**      **B**       **C**       **D**       **E**
-               **A**       1     0     0     0     0
-               **B**       0     1     0     0     0
-               **C**       0     0     1     0     0
-               **D**       0     0     0     1     0
-               **E**       0     0     0     0     1
-
 ##Out of sample error: 
 Run all of the pre-processing on the testing set and calculate the classification error on the testing set
 
@@ -246,17 +238,7 @@ table(compt[,])/apply(table(compt[,]),2,sum)
 ```
 
 
-
-
 Testing on the testing data-set, I get a perfect very good classification with 90% accuracy.
-
-                           Estimate
- Actual        **A**        **B**        **C**        **D**        **E**
-               **A** 0.878751 0.004461 0.001217 0.002433 0.000406
-               **B** 0.091563 0.862001 0.011772 0.001308 0.005886
-               **C** 0.048701 0.123377 0.899351 0.010552 0.005682
-               **D** 0.066430 0.014172 0.080602 0.945084 0.007972
-               **E** 0.018072 0.024096 0.009036 0.030873 0.980422
 
 
 #Conclusions
